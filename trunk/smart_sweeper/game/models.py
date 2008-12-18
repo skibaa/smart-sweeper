@@ -14,4 +14,4 @@ class Game(db.Model):
     user = db.UserProperty()
     isComplete = db.BooleanProperty()
     startDate = db.DateTimeProperty(auto_now_add = 1)
-    boardType = db.ReferenceProperty(BoardType)
+    boardTypeName = db.StringProperty()
