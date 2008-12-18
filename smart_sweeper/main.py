@@ -13,7 +13,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import logging
 import django.core.handlers.wsgi
 import django.core.signals
-import django.db
+#import django.db
 import django.dispatch.dispatcher
 
 def log_exception(*args, **kwds):
@@ -24,9 +24,9 @@ django.dispatch.dispatcher.connect(
    log_exception, django.core.signals.got_request_exception)
 
 # Unregister the rollback event handler.
-django.dispatch.dispatcher.disconnect(
-    django.db._rollback_on_exception,
-    django.core.signals.got_request_exception)
+#django.dispatch.dispatcher.disconnect(
+#    django.db._rollback_on_exception,
+#    django.core.signals.got_request_exception)
 
 def main():
   # Create a Django application for WSGI.
