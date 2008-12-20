@@ -16,14 +16,14 @@ from django.shortcuts import render_to_response
 from game.models import *
 
 class NewGameForm(forms.Form):
-    board_kind_key = fields.ChoiceField(required=True)
+    board = fields.ChoiceField(required=True)
 
     def set_board_choices(self):
-        bound_field = self['board_kind_key']
+        bound_field = self['board']
         choices = [('', '[Select board]')]
         def add_names(aModel):
             for b in aModel.all():
-                pair = (b.kind_key(), b.name)
+                pair = (b.key(), b.name)
                 choices.append(pair)
         add_names(BoardType)
         add_names(RectangleBoardType)
@@ -82,7 +82,7 @@ def new_game(request):
             'form': form,
         })    # Process the data in form.cleaned_data
 
-    board_type = BoardType.get_by_kind_key(form.clean_data['board_kind_key'])
+    board_type = BoardType.get(form.clean_data['board'])
     g = Game(
         user=user,
         isComplete=False,

@@ -7,18 +7,6 @@ class UserPrefs(db.Model):
 class BoardType(db.Model):
     name = db.StringProperty()
 
-    @classmethod
-    def get_view(self):
-        return None
-
-    def kind_key(self):
-        return self.kind()+' '+str(self.key())
-
-    @classmethod
-    def get_by_kind_key(self, kk):
-        (kind, key) = kk.split()
-        return globals()[kind].get(key)
-
 class RectangleBoardType(BoardType):
     width = db.IntegerProperty()
     height = db.IntegerProperty()
