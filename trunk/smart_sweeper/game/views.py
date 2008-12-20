@@ -85,9 +85,9 @@ def new_game(request):
     board_type = BoardType.get_by_kind_key(form.clean_data['board_kind_key'])
     g = Game(
         user=user,
-        isComplete=False
+        isComplete=False,
+        board_type = board_type
     )
-    g._board_type = board_type
     g.put() #Save new game to db, and redirect there
     return HttpResponseRedirect(
         reverse('game.views.game', args=(g.key().id(),))) # Redirect after POST
@@ -97,7 +97,7 @@ def new_game(request):
 def game(request):
     user = users.get_current_user()
     game = request.game
-    return render_to_response (game._board_type.get_view(), {
+    return render_to_response (game.board_type.get_view(), {
         'user': user,
         'game': game,
         'logout_url': users.create_logout_url('/'),
