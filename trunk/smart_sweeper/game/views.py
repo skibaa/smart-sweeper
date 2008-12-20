@@ -2,7 +2,7 @@ from django.http import HttpResponseRedirect
 import logging
 
 #AppEngine imports
-from google.appengine.ext.db import djangoforms
+#from google.appengine.ext.db import djangoforms
 from google.appengine.api import users
 
 
