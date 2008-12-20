@@ -16,14 +16,14 @@ from django.shortcuts import render_to_response
 from game.models import *
 
 class NewGameForm(forms.Form):
-    board_name = fields.ChoiceField(required=True)
+    board_kind_key = fields.ChoiceField(required=True)
 
     def set_board_choices(self):
-        bound_field = self['board_name']
+        bound_field = self['board_kind_key']
         choices = [('', '[Select board]')]
         def add_names(aModel):
             for b in aModel.all():
-                pair = (b.name, b.name)
+                pair = (b.kind_key(), b.name)
                 choices.append(pair)
         add_names(BoardType)
         add_names(RectangleBoardType)
@@ -76,28 +76,28 @@ def new_game(request):
     form = NewGameForm(request.POST) # A form bound to the POST data
     form.set_board_choices()
     logging.debug("form bound %s", form)
-    if form.is_valid(): # All validation rules pass
-        # Process the data in form.cleaned_data
-        g = Game(
-            user=user,
-            isComplete=False,
-            boardTypeName=form.clean_data['board_name']
-        )
-        g.put() #Save new game to db, and redirect there
-        return HttpResponseRedirect(
-            reverse('game.views.game', args=(g.key().id(),))) # Redirect after POST
+    if not form.is_valid(): # All validation rules pass
+        return render_to_response ("home/new_game_form.html", {
+            'user': user,
+            'form': form,
+        })    # Process the data in form.cleaned_data
 
-    return render_to_response ("home/new_game_form.html", {
-        'user': user,
-        'form': form,
-    })
+    board_type = BoardType.get_by_kind_key(form.clean_data['board_kind_key'])
+    g = Game(
+        user=user,
+        isComplete=False
+    )
+    g._board_type = board_type
+    g.put() #Save new game to db, and redirect there
+    return HttpResponseRedirect(
+        reverse('game.views.game', args=(g.key().id(),))) # Redirect after POST
 
 @login_required
 @game_required
 def game(request):
     user = users.get_current_user()
     game = request.game
-    return render_to_response ("boards/%s.html"%game.boardTypeName, {
+    return render_to_response (game._board_type.get_view(), {
         'user': user,
         'game': game,
         'logout_url': users.create_logout_url('/'),

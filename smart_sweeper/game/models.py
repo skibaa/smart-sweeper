@@ -7,11 +7,27 @@ class UserPrefs(db.Model):
 class BoardType(db.Model):
     name = db.StringProperty()
 
+    @classmethod
+    def get_view(self):
+        return None
+
+    def kind_key(self):
+        return self.kind()+' '+str(self.key())
+
+    @classmethod
+    def get_by_kind_key(self, kk):
+        (kind, key) = kk.split()
+        return globals()[kind].get(key)
+
 class RectangleBoardType(BoardType):
     width = db.IntegerProperty()
     height = db.IntegerProperty()
 
-class ReferencesBoardType(object):
+    @classmethod
+    def get_view(self):
+        return 'boards/rectangle.html'
+
+class BoardTypeExpando(db.Expando):
     #property board_type_key = any_board_type.key()
     #property board_type_kind = any_board_type.kind()
 
@@ -19,7 +35,7 @@ class ReferencesBoardType(object):
         if (not 'board_type_key' in self.dynamic_properties()) or (not 'board_type_kind' in self.dynamic_properties()):
             return None
         kind=globals()[self.board_type_kind]
-        return kind.get(board_type_key)
+        return kind.get(self.board_type_key)
 
     def _set_board_type(self, aBoard_type):
         if not aBoard_type:
@@ -31,9 +47,9 @@ class ReferencesBoardType(object):
         del self.board_type_key
         del self.board_type_kind
 
-    board_type=property(_get_board_type, _set_board_type, _delete_board_type)
+    _board_type=property(_get_board_type, _set_board_type, _delete_board_type)
     
-class Game(db.Expando, ReferencesBoardType):
+class Game(BoardTypeExpando):
     user = db.UserProperty()
     is_complete = db.BooleanProperty()
     start_date = db.DateTimeProperty(auto_now_add = 1)
@@ -43,7 +59,11 @@ class Game(db.Expando, ReferencesBoardType):
             cell_in_game=cell.create_attached_to_game(self)
             cell_in_game.put()
 
-class Cell(db.Expando, ReferencesBoardType):
+    @property
+    def cells(self):
+        return Cell.get_by_board_and_name(board_type, self)
+
+class Cell(BoardTypeExpando):
     coord = db.StringProperty() #coordinates of me - depends on board type
     isOpen = db.BooleanProperty()
     isBomb = db.BooleanProperty()
