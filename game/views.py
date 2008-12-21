@@ -103,13 +103,15 @@ def new_game(request):
             'form': form,
         })    # Process the data in form.cleaned_data
 
-    board_type = BoardType.get(form.clean_data['board'])
+    board = BoardType.get(form.clean_data['board'])
     g = Game(
         user=user,
         isComplete=False,
-        board_type = board_type
+        board = board
     )
     g.put() #Save new game to db, and redirect there
+    g.start_game()
+    g.put()
     return HttpResponseRedirect(
         reverse('game.views.game', args=(g.key().id(),))) # Redirect after POST
 
@@ -118,16 +120,31 @@ def new_game(request):
 def game(request):
     user = users.get_current_user()
     game = request.game
-
-    return render_to_response (game.board_type.get_template(), {
+    cells = game.board.get_cells_for_template(game)
+    return render_to_response (game.board.get_template(), {
         'user': user,
         'game': game,
+        'cells': cells,
         'logout_url': users.create_logout_url('/'),
     })
 
 @admin_required
 def admin(request):
-    return render_to_response ("admin/index.html")
+    boards = RectangleBoardType.all().fetch(1000) #TODO: find out how to use polymorphism
+    return render_to_response ("admin/index.html", {'boards':boards})
+
+@admin_required
+def view_board(request, board_key):
+    board = BoardType.get(board_key)
+    return render_to_response ("admin/edit_board.html", {'board':board})
+
+@admin_required
+def del_board(request, board_key):
+    board = BoardType.get(board_key)
+    for cell in board.cell_set:
+        cell.delete()
+    board.delete()
+    return render_to_response ("admin/edit_board.html", {'board':board})
 
 @admin_required
 def new_board(request):
@@ -154,5 +171,7 @@ def new_board(request):
         height=form.clean_data['height'])
     board.put()
     board.init_cells()
+    board.put()
+    assert board.cell_set.fetch(1)[0]
     return render_to_response("admin/index.html")
 

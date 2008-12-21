@@ -9,6 +9,14 @@ and open the template in the editor.
     <meta http-equiv="Content-Type" content="text/html; charset=MacRoman">
   </head>
   <body>
-    Rectangle board
+      <table>
+    {% for row in cells %}
+        <tr>
+      {% for cell in row %}
+            <td>{{cell.coord}}</td>
+      {% endfor %}
+        </tr>
+    {% endfor %}
+      </table>
   </body>
 </html>
