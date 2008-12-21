@@ -1,3 +1,4 @@
+from game.models import RectangleBoardType
 from django.http import HttpResponseRedirect
 import logging
 
@@ -29,6 +30,18 @@ class NewGameForm(forms.Form):
         add_names(RectangleBoardType)
         bound_field.field.choices = choices
     
+class NewBoardForm(forms.Form):
+    name = fields.CharField(required=True)
+    bombs = fields.IntegerField(required=True)
+    board = fields.ChoiceField(required=True)
+    width = fields.IntegerField(required=True)
+    height = fields.IntegerField(required=True)
+
+    def set_board_choices(self):
+        bound_field = self['board']
+        choices = [('', '[Select board type]'),('RectangleBoardType', 'Rectangle board')]
+        bound_field.field.choices = choices
+
 def login_required(func):
   """Decorator that redirects to the login page if you're not logged in."""
   def login_wrapper(request, *args, **kwds):
@@ -38,6 +51,15 @@ def login_required(func):
 
     return func(request, *args, **kwds)
   return login_wrapper
+
+def admin_required(func):
+  """Decorator that redirects to the login page if you're not logged in."""
+  def admin_wrapper(request, *args, **kwds):
+    if not users.is_current_user_admin():
+        return render_to_response("admin/noaccess.html")
+
+    return func(request, *args, **kwds)
+  return admin_wrapper
 
 def game_required(func):
   """Decorator that processes the game_id handler argument."""
@@ -75,7 +97,6 @@ def new_game(request):
 
     form = NewGameForm(request.POST) # A form bound to the POST data
     form.set_board_choices()
-    logging.debug("form bound %s", form)
     if not form.is_valid(): # All validation rules pass
         return render_to_response ("home/new_game_form.html", {
             'user': user,
@@ -98,8 +119,40 @@ def game(request):
     user = users.get_current_user()
     game = request.game
 
-    return render_to_response (game.board_type.get_view(), {
+    return render_to_response (game.board_type.get_template(), {
         'user': user,
         'game': game,
         'logout_url': users.create_logout_url('/'),
     })
+
+@admin_required
+def admin(request):
+    return render_to_response ("admin/index.html")
+
+@admin_required
+def new_board(request):
+    if request.method != 'POST': # If the form has been submitted...
+        form = NewBoardForm() # An unbound form
+        form.set_board_choices()
+        return render_to_response ("admin/new_board.html", {
+            'form': form,
+        })
+
+    form = NewBoardForm(request.POST) # A form bound to the POST data
+    form.set_board_choices()
+    if not form.is_valid(): # All validation rules pass
+        return render_to_response ("admin/new_board.html", {
+            'form': form,
+        })    # Process the data in form.cleaned_data
+
+
+    board_class = globals()[form.clean_data['board']]
+    #TODO: use reflection to allow any class
+    assert board_class==RectangleBoardType
+    board = board_class(name=form.clean_data['name'],
+        width=form.clean_data['width'],
+        height=form.clean_data['height'])
+    board.put()
+    board.init_cells()
+    return render_to_response("admin/index.html")
+
