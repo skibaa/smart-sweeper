@@ -97,6 +97,7 @@ def new_game(request):
 def game(request):
     user = users.get_current_user()
     game = request.game
+
     return render_to_response (game.board_type.get_view(), {
         'user': user,
         'game': game,
