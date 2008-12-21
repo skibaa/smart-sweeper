@@ -6,14 +6,41 @@ class UserPrefs(db.Model):
 
 class BoardType(db.Model):
     name = db.StringProperty()
+    bombs = db.IntegerProperty()
 
 class RectangleBoardType(BoardType):
     width = db.IntegerProperty()
     height = db.IntegerProperty()
 
     @classmethod
-    def get_view(self):
+    def get_template(self):
         return 'boards/rectangle.html'
+    
+    @staticmethod
+    def _str_coord(row, col):
+        return "%d %d"%(row, col)
+
+    def _calc_neighbours_coords(self, r, c):
+        result_tuples=[(r-1, c-1),(r-1, c), (r-1, c+1),
+            (r, c-1),     (r, c+1),
+            (r+1, c-1), (r+1, c), (r+1, c+1)]
+        result_strings=[]
+        for (row, col) in result_tuples:
+            if row<0 or col<0:
+                continue
+            if row>=self.height or col>=self.width:
+                continue
+            result_strings+=[self._str_coord(row, col)]
+        return result_strings
+
+    def init_cells(self):
+        for r in range(0, self.height):
+            for c in range(0, self.width):
+                cell = Cell(coord=self._str_coord(r, c),
+                    neighbours_coords=self._calc_neighbours_coords(r, c),
+                    boardType=self
+                    )
+                cell.put()
 
 class Game(db.Model):
     user = db.UserProperty()
@@ -35,12 +62,6 @@ class Cell(db.Model):
     boardType = db.ReferenceProperty(BoardType)
     game = db.ReferenceProperty(Game) #prototype Cell if game==None
 
-    def set_neighbours(self, neighbours):
-        for neighbour in neighbours:
-            if not self.coord in neighbour.neighbours_coords:
-                neighbour.neighbours_coords += [self.coord]
-            self.neighbours_coords += [neighbour.coord]
-
     def create_attached_to_game(self, game):
         new_cell = Cell(coord=self.coord,
             neighbours_coords=self.neighboursCoords,
@@ -53,7 +74,9 @@ class Cell(db.Model):
         return self.gql("""WHERE :coords in neighbours_coords
             and board_type_key=:btkey
             and board_type_kind=:btkind
-            and game=:game""",
+            and game=:game
+            order by coord
+            """,
             coords=coord,
             btkey=self.board_type_key,
             btkind=self.board_type_kind,

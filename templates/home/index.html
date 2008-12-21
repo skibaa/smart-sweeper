@@ -11,7 +11,7 @@
     <p>Your games:</p><table>
         <thead><th>Board</th><th>Date</th></thead>
     {% for game in games %}
-        <tr><td><a href="game/{{game.key.id}}">{{game.boardType.name}}</a></td>
+        <tr><td><a href="game/{{game.key.id}}">{{game.boardType.name}}&nbsp;</a></td>
         <td>{{game.startDate}}</td></tr>
     {% endfor %}
     </table>
