@@ -1,12 +1,10 @@
-from game.models import RectangleBoardType
+from google.appengine.ext.webapp import template #according to http://code.google.com/appengine/articles/djangoforms.html
+
 from django.http import HttpResponseRedirect
-import logging
 
 #AppEngine imports
-#from google.appengine.ext.db import djangoforms
-from google.appengine.ext.webapp import template
 from google.appengine.api import users
-
+#from google.appengine.ext.db import djangoforms
 
 #Django imports
 from django.core.urlresolvers import reverse
@@ -16,6 +14,7 @@ from django.shortcuts import render_to_response
 
 #Local imports
 from game.models import *
+from game import engine
 
 class NewGameForm(forms.Form):
     board = fields.ChoiceField(required=True)
@@ -62,17 +61,6 @@ def admin_required(func):
     return func(request, *args, **kwds)
   return admin_wrapper
 
-def game_required(func):
-  """Decorator that processes the game_id handler argument."""
-  def issue_wrapper(request, game_id, *args, **kwds):
-    game = Game.get_by_id(int(game_id))
-    if game is None:
-      return HttpResponseNotFound('No game exists with that id (%s)' %
-                                  game_id)
-    request.game = game
-    return func(request, *args, **kwds)
-  return issue_wrapper
-
 def index(request):
     user = users.get_current_user()
     games = Game.gql("WHERE user=:user AND isComplete=FALSE", user=user).fetch(100)
@@ -111,16 +99,17 @@ def new_game(request):
         board = board
     )
     g.put() #Save new game to db, and redirect there
-    g.start_game()
+    engine.start_game(g)
     g.put()
     return HttpResponseRedirect(
         reverse('game.views.game', args=(g.key().id(),))) # Redirect after POST
 
 @login_required
-@game_required
-def game(request):
+def game(request, game_id, cell_id=None):
     user = users.get_current_user()
-    game = request.game
+    game = Game.get_by_id(long(game_id))
+    if cell_id:
+        engine.open(Cell.get_by_id(long(cell_id)))
     cells = game.board.get_cells_for_template(game)
     return render_to_response (game.board.get_template(), {
         'user': user,
