@@ -26,10 +26,8 @@ class RectangleBoardType(BoardType):
         cells = [[i]*self.width for i in range(self.height)]
         wasThere=False
         for cell in game.cell_set.fetch(1000):
-            wasThere = True
             (row, col)=cell.coord.split()
             cells[int(row)][int(col)]=cell
-        assert wasThere
         return cells
 
     def _calc_neighbours_coords(self, r, c):
@@ -62,16 +60,16 @@ class Game(db.Model):
 
     def start_game(self):
         for cell in self.board.cell_set:
+            if cell.game:
+                continue # ignore cells belonging to other games
             cell.create_attached_to_game(self)
         self.put() #so the cell_set is updated
-        cells = self.cell_set.fetch(1000      
-        assert self.board.bombs > 0
-        for i in range (self.board.bombs):
+        cells = [c for c in self.cell_set] #to overcome Datastore limit of 1000
+        for i in range(self.board.bombs):
             cell = cells[randint(0, len(cells)-1)]
             cell.is_bomb=True
             cell.put()
             cells.remove(cell) #so it does not get a bomb twice
-
 
 class Cell(db.Model):
     coord = db.StringProperty() #coordinates of me - depends on board type
