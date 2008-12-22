@@ -1,6 +1,6 @@
 from google.appengine.ext import db
-import logging
 from random import randint
+from game import engine
 
 class UserPrefs(db.Model):
     user = db.UserProperty()
@@ -16,7 +16,7 @@ class RectangleBoardType(BoardType):
     @classmethod
     def get_template(self):
         return 'boards/rectangle.html'
-    
+
     @staticmethod
     def _str_coord(row, col):
         return "%d %d"%(row, col)
@@ -24,10 +24,17 @@ class RectangleBoardType(BoardType):
     def get_cells_for_template(self, game):
         assert game.board == self
         cells = [[i]*self.width for i in range(self.height)]
-        wasThere=False
-        for cell in game.cell_set.fetch(1000):
+        for cell in game.cell_set:
             (row, col)=cell.coord.split()
-            cells[int(row)][int(col)]=cell
+            if cell.is_open:
+                if cell.is_bomb:
+                    val='B'
+                else:
+                    val=engine.neighbours_bombs(cell)
+            else:
+                val='&nbsp;'
+            cells[int(row)][int(col)] = {'cell':cell, 'val':val}
+            
         return cells
 
     def _calc_neighbours_coords(self, r, c):
@@ -46,7 +53,8 @@ class RectangleBoardType(BoardType):
     def init_cells(self):
         for r in range(0, self.height):
             for c in range(0, self.width):
-                cell = Cell(coord=self._str_coord(r, c),
+                cell = Cell(
+                    coord=self._str_coord(r, c),
                     neighbours_coords=self._calc_neighbours_coords(r, c),
                     board=self
                     )
@@ -55,21 +63,9 @@ class RectangleBoardType(BoardType):
 class Game(db.Model):
     user = db.UserProperty()
     is_complete = db.BooleanProperty()
+    is_won = db.BooleanProperty()
     start_date = db.DateTimeProperty(auto_now_add = 1)
     board = db.ReferenceProperty(BoardType)
-
-    def start_game(self):
-        for cell in self.board.cell_set:
-            if cell.game:
-                continue # ignore cells belonging to other games
-            cell.create_attached_to_game(self)
-        self.put() #so the cell_set is updated
-        cells = [c for c in self.cell_set] #to overcome Datastore limit of 1000
-        for i in range(self.board.bombs):
-            cell = cells[randint(0, len(cells)-1)]
-            cell.is_bomb=True
-            cell.put()
-            cells.remove(cell) #so it does not get a bomb twice
 
 class Cell(db.Model):
     coord = db.StringProperty() #coordinates of me - depends on board type
@@ -78,24 +74,3 @@ class Cell(db.Model):
     neighbours_coords = db.StringListProperty()
     board = db.ReferenceProperty(BoardType)
     game = db.ReferenceProperty(Game) #prototype Cell if game==None
-
-    def create_attached_to_game(self, game):
-        cell = Cell(coord=self.coord,
-            neighbours_coords=self.neighbours_coords,
-            board=self.board,
-            game=game
-        )
-        cell.put()
-        assert not cell.key()==self.key()
-
-    @property
-    def neighbours(self):
-        return self.gql("""WHERE :coords in neighbours_coords
-            and board=:board
-            and game=:game
-            order by coord
-            """,
-            coords=coord,
-            btkey=self.board,
-            game=game)
-

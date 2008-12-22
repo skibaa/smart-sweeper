@@ -9,11 +9,11 @@ and open the template in the editor.
     <meta http-equiv="Content-Type" content="text/html; charset=MacRoman">
   </head>
   <body>
-      <table>
+      <table border="1">
     {% for row in cells %}
         <tr>
       {% for cell in row %}
-            <td>{{ cell.is_bomb }}</td>
+            <td><a href="/game/{{cell.cell.game.key.id}}/open/{{cell.cell.key.id}}">{{ cell.val }}</a></td>
       {% endfor %}
         </tr>
     {% endfor %}
