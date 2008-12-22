@@ -10,9 +10,34 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Used 246 times in query history.
+# Used 568 times in query history.
 - kind: Cell
   properties:
   - name: board
   - name: coord
   - name: game
+
+# Used 13 times in query history.
+- kind: Cell
+  properties:
+  - name: board
+  - name: game
+  - name: neighbours_coords
+  - name: coord
+
+# Used 43 times in query history.
+- kind: Cell
+  properties:
+  - name: board=
+  - name: game=
+  - name: is_bomb=
+  - name: neighbours_coords=
+  - name: coord
+
+# Used 6 times in query history.
+- kind: Cell
+  properties:
+  - name: board=
+  - name: game=
+  - name: neighbours_coords=
+  - name: coord
