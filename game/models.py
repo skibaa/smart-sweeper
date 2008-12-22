@@ -1,5 +1,6 @@
 from google.appengine.ext import db
 import logging
+from random import randint
 
 class UserPrefs(db.Model):
     user = db.UserProperty()
@@ -62,12 +63,20 @@ class Game(db.Model):
     def start_game(self):
         for cell in self.board.cell_set:
             cell.create_attached_to_game(self)
-        self.board.put() #so the cell_set is updated
+        self.put() #so the cell_set is updated
+        cells = self.cell_set.fetch(1000      
+        assert self.board.bombs > 0
+        for i in range (self.board.bombs):
+            cell = cells[randint(0, len(cells)-1)]
+            cell.is_bomb=True
+            cell.put()
+            cells.remove(cell) #so it does not get a bomb twice
+
 
 class Cell(db.Model):
     coord = db.StringProperty() #coordinates of me - depends on board type
-    isOpen = db.BooleanProperty()
-    isBomb = db.BooleanProperty()
+    is_open = db.BooleanProperty()
+    is_bomb = db.BooleanProperty()
     neighbours_coords = db.StringListProperty()
     board = db.ReferenceProperty(BoardType)
     game = db.ReferenceProperty(Game) #prototype Cell if game==None
