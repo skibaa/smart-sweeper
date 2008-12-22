@@ -4,6 +4,7 @@ import logging
 
 #AppEngine imports
 #from google.appengine.ext.db import djangoforms
+from google.appengine.ext.webapp import template
 from google.appengine.api import users
 
 
