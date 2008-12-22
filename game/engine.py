@@ -20,21 +20,23 @@ def start_game(game):
         cells.remove(cell) #so it does not get a bomb twice
 
 def cell_neighbours(cell):
-    return cell.gql("""WHERE coord in :coords
+    return cell.gql("""WHERE neighbours_coords=:coord
         and board=:board
         and game=:game
-        order by coord
         """,
-        coords=cell.neighbours_coords,
+        coord=cell.coord,
         board=cell.board,
         game=cell.game)
 
 def neighbours_bombs(cell):
-    i=0
-    for neighbour in cell_neighbours(cell):
-        if neighbour.is_bomb:
-            i += 1
-    return i
+    return cell.gql("""WHERE neighbours_coords=:coord
+        and board=:board
+        and game=:game
+        and is_bomb=True
+        """,
+        coord=cell.coord,
+        board=cell.board,
+        game=cell.game).count()
 
 def open(cell):
     if cell.is_open:
