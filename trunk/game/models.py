@@ -1,6 +1,5 @@
 from google.appengine.ext import db
 from random import randint
-from game import engine
 
 class UserPrefs(db.Model):
     user = db.UserProperty()
@@ -30,6 +29,7 @@ class RectangleBoardType(BoardType):
                 if cell.is_bomb:
                     val='B'
                 else:
+                    from game import engine
                     val=engine.neighbours_bombs(cell)
             else:
                 val='&nbsp;'
