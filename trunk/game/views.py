@@ -167,11 +167,13 @@ def new_board(request):
     #TODO: use reflection to allow any class
     assert board_class==RectangleBoardType
     board = board_class(name=form.clean_data['name'],
+        bombs=form.clean_data['bombs'],
         width=form.clean_data['width'],
         height=form.clean_data['height'])
     board.put()
     board.init_cells()
     board.put()
     assert board.cell_set.fetch(1)[0]
-    return render_to_response("admin/index.html")
+    return render_to_response("admin/index.html",
+        {'boards':RectangleBoardType.all().fetch(1000)})
 
