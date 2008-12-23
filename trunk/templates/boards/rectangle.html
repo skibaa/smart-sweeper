@@ -13,7 +13,7 @@ and open the template in the editor.
     {% for row in cells %}
         <tr>
       {% for cell in row %}
-            <td><a href="/game/{{cell.cell.game.key.id}}/open/{{cell.cell.key.id}}">{{ cell.val }}</a></td>
+            <td><a oncontextmenu="window.location='/game/flag/{{cell.cell.key.id}}';return false" href="/game/open/{{cell.cell.key.id}}">{{ cell.val }}</a></td>
       {% endfor %}
         </tr>
     {% endfor %}

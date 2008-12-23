@@ -39,3 +39,10 @@ def open(cell):
     if neighbours_bombs(cell)==0: #if all neighbours are clean, open them
         for n in cell_neighbours(cell):
             open(n)
+
+def flag(cell):
+    if cell.is_flag:
+        cell.is_flag=None
+    else:
+        cell.is_flag=True
+    cell.put()

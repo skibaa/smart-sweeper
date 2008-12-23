@@ -40,7 +40,10 @@ class RectangleBoardType(BoardType):
                     from game import engine
                     val=engine.neighbours_bombs(cell)
             else:
-                val='&nbsp;'
+                if cell.is_flag:
+                    val='F'
+                else:
+                    val='&nbsp;'
             cells[int(row)][int(col)] = {'cell':cell, 'val':val}
             
         return cells
@@ -79,6 +82,7 @@ class Cell(db.Model):
     coord = db.StringProperty() #coordinates of me - depends on board type
     is_open = db.BooleanProperty()
     is_bomb = db.BooleanProperty()
+    is_flag = db.BooleanProperty()
     neighbours_coords = db.StringListProperty()
     board = db.ReferenceProperty(BoardType)
     game = db.ReferenceProperty(Game) #prototype Cell if game==None
