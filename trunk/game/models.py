@@ -7,15 +7,6 @@ class BoardType(db.Model):
     name = db.StringProperty()
     bombs = db.IntegerProperty()
 
-    _cell_map = {}
-    
-    @property
-    def cell_map(self):
-        if not self._cell_map:
-            for cell in self.cell_set:
-                self._cell_map[cell.coord]=cell
-        return self._cell_map
-
 class RectangleBoardType(BoardType):
     width = db.IntegerProperty()
     height = db.IntegerProperty()
@@ -29,21 +20,11 @@ class RectangleBoardType(BoardType):
         return "%d %d"%(row, col)
 
     def get_cells_for_template(self, game):
+        from game import engine
         assert game.board == self
         cells = [[i]*self.width for i in range(self.height)]
-        for cell in game.cell_set:
-            (row, col)=cell.coord.split()
-            if cell.is_open:
-                if cell.is_bomb:
-                    val='B'
-                else:
-                    from game import engine
-                    val=engine.neighbours_bombs(cell)
-            else:
-                if cell.is_flag:
-                    val='F'
-                else:
-                    val='&nbsp;'
+        for (coord,cell,val) in engine.cells_renderings(game):
+            (row, col)=coord.split()
             cells[int(row)][int(col)] = {'cell':cell, 'val':val}
             
         return cells
@@ -77,12 +58,23 @@ class Game(db.Model):
     is_won = db.BooleanProperty()
     start_date = db.DateTimeProperty(auto_now_add = 1)
     board = db.ReferenceProperty(BoardType)
+    
+    @property
+    def cell_map(self):
+        try:
+            return self._cell_map
+        except AttributeError:
+            self._cell_map = {}
+            for cell in self.cell_set:
+                self._cell_map[cell.coord]=cell
+            return self._cell_map
 
 class Cell(db.Model):
     coord = db.StringProperty() #coordinates of me - depends on board type
     is_open = db.BooleanProperty()
     is_bomb = db.BooleanProperty()
     is_flag = db.BooleanProperty()
+    neighbours_bombs_cached = db.IntegerProperty()
     neighbours_coords = db.StringListProperty()
     board = db.ReferenceProperty(BoardType)
     game = db.ReferenceProperty(Game) #prototype Cell if game==None

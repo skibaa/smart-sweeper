@@ -9,6 +9,13 @@ and open the template in the editor.
     <meta http-equiv="Content-Type" content="text/html; charset=MacRoman">
   </head>
   <body>
+    {% if game.is_complete %}
+    {% if game.is_won %}
+    <h1>You win!</h1>
+    {% else %}
+    <h1>You lost.</h1>
+    {% endif %}
+    {% endif %}
       <table border="1">
     {% for row in cells %}
         <tr>

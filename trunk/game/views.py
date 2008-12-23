@@ -126,6 +126,7 @@ def game(request, game_id):
     cells = game.board.get_cells_for_template(game)
     return render_to_response (game.board.get_template(), {
         'cells': cells,
+        'game': game,
         'logout_url': users.create_logout_url('/'),
     })
 

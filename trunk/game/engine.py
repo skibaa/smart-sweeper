@@ -20,25 +20,33 @@ def start_game(game):
         cell.put()
         cells.remove(cell) #so it does not get a bomb twice
 
-def cell_neighbours(cell):
+def cell_neighbours(cell, game=None):
+    if not game:
+        game=cell.game
     for i in cell.neighbours_coords:
-        yield cell.board.cell_map[i]
+        yield game.cell_map[i]
 
-def neighbours_bombs(cell):
-    return len(filter(lambda(c):c.is_bomb, cell_neighbours(cell)))
+def neighbours_bombs(cell, game=None):
+    assert cell.is_open
+    if not cell.neighbours_bombs_cached==None:
+        return cell.neighbours_bombs_cached
+    return len(filter(lambda(c):c.is_bomb, cell_neighbours(cell, game)))
 
-def open(cell):
+def open(cell, game=None):
     if cell.is_open:
         return
     cell.is_open=True
+    cell.neighbours_bombs_cached=neighbours_bombs(cell)
     cell.put()
+    if not game:
+        game=cell.game
     if cell.is_bomb:
-        cell.game.is_complete=True
-        cell.game.put()
+        game.is_complete=True
+        game.put()
         return
-    if neighbours_bombs(cell)==0: #if all neighbours are clean, open them
-        for n in cell_neighbours(cell):
-            open(n)
+    if cell.neighbours_bombs_cached==0: #if all neighbours are clean, open them
+        for n in cell_neighbours(cell, game):
+            open(n, game)
 
 def flag(cell):
     if cell.is_flag:
@@ -46,3 +54,17 @@ def flag(cell):
     else:
         cell.is_flag=True
     cell.put()
+
+def cells_renderings(game):
+    for (coord,cell) in game.cell_map.iteritems():
+        if cell.is_open:
+            if cell.is_bomb:
+                val='B'
+            else:
+                val=neighbours_bombs(cell, game)
+        else:
+            if cell.is_flag:
+                val='F'
+            else:
+                val='&nbsp;'
+        yield (coord,cell,val)
