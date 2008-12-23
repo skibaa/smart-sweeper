@@ -1,5 +1,4 @@
 from google.appengine.ext import db
-from random import randint
 
 class UserPrefs(db.Model):
     user = db.UserProperty()
@@ -7,6 +6,15 @@ class UserPrefs(db.Model):
 class BoardType(db.Model):
     name = db.StringProperty()
     bombs = db.IntegerProperty()
+
+    _cell_map = {}
+    
+    @property
+    def cell_map(self):
+        if not self._cell_map:
+            for cell in self.cell_set:
+                self._cell_map[cell.coord]=cell
+        return self._cell_map
 
 class RectangleBoardType(BoardType):
     width = db.IntegerProperty()

@@ -1,3 +1,4 @@
+from random import randint
 from game.models import *
 
 def start_game(game):
@@ -20,23 +21,11 @@ def start_game(game):
         cells.remove(cell) #so it does not get a bomb twice
 
 def cell_neighbours(cell):
-    return cell.gql("""WHERE neighbours_coords=:coord
-        and board=:board
-        and game=:game
-        """,
-        coord=cell.coord,
-        board=cell.board,
-        game=cell.game)
+    for i in cell.neighbours_coords:
+        yield cell.board.cell_map[i]
 
 def neighbours_bombs(cell):
-    return cell.gql("""WHERE neighbours_coords=:coord
-        and board=:board
-        and game=:game
-        and is_bomb=True
-        """,
-        coord=cell.coord,
-        board=cell.board,
-        game=cell.game).count()
+    return len(filter(lambda(c):c.is_bomb, cell_neighbours(cell)))
 
 def open(cell):
     if cell.is_open:
@@ -47,6 +36,6 @@ def open(cell):
         cell.game.is_complete=True
         cell.game.put()
         return
-    if not neighbours_bombs(cell): #if all neighbours are clean, open them
+    if neighbours_bombs(cell)==0: #if all neighbours are clean, open them
         for n in cell_neighbours(cell):
             open(n)
