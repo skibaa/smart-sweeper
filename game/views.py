@@ -105,22 +105,33 @@ def new_game(request):
         reverse('game.views.game', args=(g.key().id(),))) # Redirect after POST
 
 @login_required
-def game(request, game_id, cell_id=None):
+def game_open(request, cell_id):
+    cell = Cell.get_by_id(long(cell_id))
+    assert cell.game.user == users.get_current_user()
+    engine.open(cell)
+    return game(request, cell.game.key().id())
+
+@login_required
+def game_flag(request, cell_id):
+    cell = Cell.get_by_id(long(cell_id))
+    assert cell.game.user == users.get_current_user()
+    engine.flag(cell)
+    return game(request, cell.game.key().id())
+
+@login_required
+def game(request, game_id):
     user = users.get_current_user()
     game = Game.get_by_id(long(game_id))
-    if cell_id:
-        engine.open(Cell.get_by_id(long(cell_id)))
+    assert game.user == user #to prevent access to others' games
     cells = game.board.get_cells_for_template(game)
     return render_to_response (game.board.get_template(), {
-        'user': user,
-        'game': game,
         'cells': cells,
         'logout_url': users.create_logout_url('/'),
     })
 
 @admin_required
 def admin(request):
-    boards = RectangleBoardType.all().fetch(1000) #TODO: find out how to use polymorphism
+    boards = RectangleBoardType.all() #TODO: find out how to use polymorphism
     return render_to_response ("admin/index.html", {'boards':boards})
 
 @admin_required
@@ -165,5 +176,5 @@ def new_board(request):
     board.put()
     assert board.cell_set.fetch(1)[0]
     return render_to_response("admin/index.html",
-        {'boards':RectangleBoardType.all().fetch(1000)})
+        {'boards':RectangleBoardType.all()})
 
