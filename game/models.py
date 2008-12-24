@@ -1,4 +1,5 @@
 from google.appengine.ext import db
+from game import cached_db
 
 class UserPrefs(db.Model):
     user = db.UserProperty()
@@ -77,4 +78,4 @@ class Cell(db.Model):
     neighbours_bombs_cached = db.IntegerProperty()
     neighbours_coords = db.StringListProperty()
     board = db.ReferenceProperty(BoardType)
-    game = db.ReferenceProperty(Game) #prototype Cell if game==None
+    game = cached_db.CachedReferenceProperty(Game) #prototype Cell if game==None
