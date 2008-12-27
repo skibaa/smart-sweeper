@@ -1,3 +1,6 @@
+import logging
+import traceback
+
 from google.appengine.ext import db
 from game import cached_db
 
@@ -62,9 +65,12 @@ class Game(db.Model):
     
     @property
     def cell_map(self):
+        logging.debug("enter cell_map")
         try:
             return self._cell_map
         except AttributeError:
+            logging.info("cell_map missing for game %s", str(self))
+            #traceback.print_stack()
             self._cell_map = {}
             for cell in self.cell_set:
                 self._cell_map[cell.coord]=cell

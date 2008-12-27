@@ -2,6 +2,7 @@ from random import randint
 from game.models import *
 
 def start_game(game):
+    cells=[]
     for cell in game.board.cell_set:
         if cell.game:
             continue # ignore cells belonging to other games
@@ -12,8 +13,8 @@ def start_game(game):
             game=game
         )
         newcell.put()
+        cells += [newcell]
     game.put() #so the cell_set is updated
-    cells = [c for c in game.cell_set] #to overcome Datastore limit of 1000
     for i in range(game.board.bombs):
         cell = cells[randint(0, len(cells)-1)]
         cell.is_bomb=True
@@ -36,7 +37,7 @@ def open(cell, game=None):
     if cell.is_open:
         return
     cell.is_open=True
-    cell.neighbours_bombs_cached=neighbours_bombs(cell)
+    cell.neighbours_bombs_cached=neighbours_bombs(cell, game)
     cell.put()
     if not game:
         game=cell.game

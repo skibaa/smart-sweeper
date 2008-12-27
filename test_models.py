@@ -1,5 +1,7 @@
 #from game.models import RectangleBoardType
+from game.models import BoardType
 import unittest
+from game.models import *
 
 #from game.models import *
 
@@ -12,4 +14,7 @@ import unittest
 #        assertEquals(g1.bombs, 3)
 
 def test_calculations():
-   assert 2+2 == 4
+   bt=BoardType(name='a', bombs=1)
+   bt.put()
+   bt1=BoardType.gql('where name=:name', name='a').fetch(1)[0]
+   assert bt1.bombs==1
