@@ -1,4 +1,5 @@
-import logging, os
+import logging
+import os
 
 # Google App Engine imports.
 from google.appengine.ext.webapp import util
@@ -10,7 +11,6 @@ settings._target = None
 # Must set this env var before importing any part of Django
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
-import logging
 import django.core.handlers.wsgi
 import django.core.signals
 #import django.db
@@ -28,12 +28,28 @@ django.dispatch.dispatcher.connect(
 #    django.db._rollback_on_exception,
 #    django.core.signals.got_request_exception)
 
-def main():
+def real_main():
+  logging.basicConfig(level=logging.DEBUG,)
   # Create a Django application for WSGI.
   application = django.core.handlers.wsgi.WSGIHandler()
 
   # Run the WSGI CGI handler with that application.
   util.run_wsgi_app(application)
 
+def profile_main():
+ # This is the main function for profiling
+ # We've renamed our original main() above to real_main()
+ import cProfile, pstats, StringIO
+ prof = cProfile.Profile()
+ prof = prof.runctx("real_main()", globals(), locals())
+ stream = StringIO.StringIO()
+ stats = pstats.Stats(prof, stream=stream)
+ stats.sort_stats("time")  # Or cumulative
+ stats.print_stats(80)  # 80 = how many to print
+ # The rest is optional.
+ # stats.print_callees()
+ # stats.print_callers()
+ logging.info("Profile data:\n%s", stream.getvalue())
+ 
 if __name__ == '__main__':
-  main()
+  real_main()
