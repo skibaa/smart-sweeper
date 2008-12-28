@@ -4,6 +4,8 @@ import traceback
 from google.appengine.ext import db
 from game import cached_db
 
+logging.basicConfig(level=logging.DEBUG)
+
 class UserPrefs(db.Model):
     user = db.UserProperty()
 

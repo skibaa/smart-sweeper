@@ -102,27 +102,33 @@ def new_game(request):
     engine.start_game(g)
     g.put()
     return HttpResponseRedirect(
-        reverse('game.views.game', args=(g.key().id(),))) # Redirect after POST
+        reverse('game.views.game_view', args=(g.key().id(),))) # Redirect after POST
 
 @login_required
 def game_open(request, cell_id):
     cell = Cell.get_by_id(long(cell_id))
-    assert cell.game.user == users.get_current_user()
-    engine.open(cell)
-    return game(request, cell.game.key().id())
+    game=cell.game
+    assert game.user == users.get_current_user()
+    engine.open(cell, game)
+    engine.check_won(game)
+    return _response_game(game)
 
 @login_required
 def game_flag(request, cell_id):
     cell = Cell.get_by_id(long(cell_id))
-    assert cell.game.user == users.get_current_user()
+    game=cell.game
+    assert game.user == users.get_current_user()
     engine.flag(cell)
-    return game(request, cell.game.key().id())
+    return _response_game(game)
 
 @login_required
-def game(request, game_id):
+def game_view(request, game_id):
     user = users.get_current_user()
     game = Game.get_by_id(long(game_id))
     assert game.user == user #to prevent access to others' games
+    return _response_game(game)
+
+def _response_game(game):
     cells = game.board.get_cells_for_template(game)
     return render_to_response (game.board.get_template(), {
         'cells': cells,
