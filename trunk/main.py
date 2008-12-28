@@ -29,7 +29,7 @@ django.dispatch.dispatcher.connect(
 #    django.core.signals.got_request_exception)
 
 def real_main():
-  logging.basicConfig(level=logging.DEBUG,)
+  logging.basicConfig(level=logging.DEBUG)
   # Create a Django application for WSGI.
   application = django.core.handlers.wsgi.WSGIHandler()
 

@@ -1,5 +1,8 @@
+import logging
 from random import randint
 from game.models import *
+
+logging.basicConfig(level=logging.DEBUG)
 
 def start_game(game):
     cells=[]
@@ -48,6 +51,17 @@ def open(cell, game=None):
     if cell.neighbours_bombs_cached==0: #if all neighbours are clean, open them
         for n in cell_neighbours(cell, game):
             open(n, game)
+
+def check_won(game):
+    logging.info("game won")
+    if game.is_won:
+        return
+    closed_cells=len(filter(lambda(c):not c.is_open, game.cell_set))
+    logging.info("closed cells:%d, bombs hidden:", closed_cells, game.board.bombs)
+    if game.board.bombs == closed_cells:
+        game.is_won=True
+        game.is_complete=True
+        game.put()
 
 def flag(cell):
     if cell.is_flag:
