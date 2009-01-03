@@ -16,6 +16,7 @@ class _CachedReverseReferenceProperty(db._ReverseReferenceProperty):
 
     def __init__(self, model, prop, collection_name):
         super(_CachedReverseReferenceProperty, self).__init__(model, prop)
+        self.__prop=prop
         self.__collection_name = collection_name
 
     def __get__(self, model_instance, model_class):
@@ -29,7 +30,11 @@ class _CachedReverseReferenceProperty(db._ReverseReferenceProperty):
         query=super(_CachedReverseReferenceProperty, self).__get__(model_instance,
             model_class)
         #replace the attribute on the instance
-        res=[c for c in query]
+        res=[]
+        for c in query:
+            resolved_name='_RESOLVED_'+self.__prop #WARNING: using internal
+            setattr(c, resolved_name, model_instance)
+            res += [c]
         model_instance.__dict__[self.__collection_name]=res
         return res
 
