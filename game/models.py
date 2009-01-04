@@ -35,7 +35,8 @@ class RectangleBoardType(BoardType):
         (row2,col2)=coord2.split()
         drow=abs(int(row1)-int(row2))
         dcol=abs(int(col1)-int(col2))
-        if drow==0 and dcol==0: return false
+        if drow==0 and dcol==0:
+            return false #same coords
         return drow<=1 and dcol<=1
 
     @staticmethod
@@ -68,7 +69,7 @@ class RectangleBoardType(BoardType):
     def init_cells(self):
         for r in range(0, self.height):
             for c in range(0, self.width):
-                cell = Cell(
+                cell = UnboundCell(
                     coord=self._str_coord(r, c),
                     neighbours_coords=self._calc_neighbours_coords(r, c),
                     board=self
@@ -91,16 +92,18 @@ class Game(db.Model):
             logging.info("cell_map missing for game %s", str(self))
             #traceback.print_stack()
             self._cell_map = {}
-            for cell in self.cell_set:
+            for cell in self.boundcell_set:
                 self._cell_map[cell.coord]=cell
             return self._cell_map
 
-class Cell(db.Model):
+class UnboundCell(db.Model):
     coord = db.StringProperty() #coordinates of me - depends on board type
+    neighbours_coords = db.StringListProperty()
+    board = db.ReferenceProperty(BoardType)
+
+class BoundCell(UnboundCell):
     is_open = db.BooleanProperty()
     is_bomb = db.BooleanProperty()
     is_flag = db.BooleanProperty()
     neighbours_bombs_cached = db.IntegerProperty()
-    neighbours_coords = db.StringListProperty()
-    board = db.ReferenceProperty(BoardType)
-    game = cached_db.CachedReferenceProperty(Game) #prototype Cell if game==None
+    game = cached_db.CachedReferenceProperty(Game)
