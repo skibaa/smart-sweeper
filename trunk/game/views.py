@@ -106,7 +106,7 @@ def new_game(request):
 
 @login_required
 def game_open(request, cell_id):
-    cell = Cell.get_by_id(long(cell_id))
+    cell = BoundCell.get_by_id(long(cell_id))
     game=cell.game
     assert game.user == users.get_current_user()
     engine.open(cell, game)
@@ -115,7 +115,7 @@ def game_open(request, cell_id):
 
 @login_required
 def game_flag(request, cell_id):
-    cell = Cell.get_by_id(long(cell_id))
+    cell = BoundCell.get_by_id(long(cell_id))
     game=cell.game
     assert game.user == users.get_current_user()
     engine.flag(cell)
@@ -149,8 +149,11 @@ def view_board(request, board_key):
 @admin_required
 def del_board(request, board_key):
     board = BoardType.get(board_key)
-    for cell in board.cell_set:
+    for cell in board.unboundcell_set:
         cell.delete()
+    #TODO: delete bound cells?
+    #for cell in board.boundcell_set:
+    #    cell.delete()
     board.delete()
     return render_to_response ("admin/edit_board.html", {'board':board})
 
@@ -181,7 +184,7 @@ def new_board(request):
     board.put()
     board.init_cells()
     board.put()
-    assert board.cell_set.fetch(1)[0]
+    assert board.unboundcell_set.fetch(1)[0],"No cells created for board"
     return render_to_response("admin/index.html",
         {'boards':RectangleBoardType.all()})
 

@@ -6,9 +6,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 def start_game(game):
     cells=[]
-    for cell in game.board.cell_set.filter('game=', None):
-        assert cell.game is None
-        newcell = Cell(
+    for cell in game.board.unboundcell_set:
+        newcell = BoundCell(
             coord=cell.coord,
             neighbours_coords=cell.neighbours_coords,
             board=cell.board,
@@ -16,7 +15,7 @@ def start_game(game):
         )
         newcell.put()
         cells += [newcell]
-    game.put() #so the cell_set is updated
+    assert cells, "No unbound cells for board"
     for i in range(game.board.bombs):
         cell = cells[randint(0, len(cells)-1)]
         cell.is_bomb=True
@@ -55,7 +54,7 @@ def check_won(game):
     logging.info("game won")
     if game.is_won:
         return
-    closed_cells=len(filter(lambda(c):not c.is_open, game.cell_set))
+    closed_cells=len(filter(lambda(c):not c.is_open, game.boundcell_set))
     logging.info("closed cells:%d, bombs hidden:", closed_cells, game.board.bombs)
     if game.board.bombs == closed_cells:
         game.is_won=True
