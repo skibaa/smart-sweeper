@@ -6,9 +6,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 def start_game(game):
     cells=[]
-    for cell in game.board.cell_set:
-        if cell.game:
-            continue # ignore cells belonging to other games
+    for cell in game.board.cell_set.filter('game=', None):
+        assert cell.game is None
         newcell = Cell(
             coord=cell.coord,
             neighbours_coords=cell.neighbours_coords,
