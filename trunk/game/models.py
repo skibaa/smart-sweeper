@@ -13,6 +13,14 @@ class BoardType(db.Model):
     name = db.StringProperty()
     bombs = db.IntegerProperty()
 
+    @classmethod
+    def get_template(self):
+        return None #stub method to be overriden
+
+    @classmethod
+    def are_neighbours(self, coord1, coord2):
+        return false #stub method to be overriden
+
 class RectangleBoardType(BoardType):
     width = db.IntegerProperty()
     height = db.IntegerProperty()
@@ -20,6 +28,15 @@ class RectangleBoardType(BoardType):
     @classmethod
     def get_template(self):
         return 'boards/rectangle.html'
+
+    @classmethod
+    def are_neighbours(self, coord1, coord2):
+        (row1,col1)=coord1.split()
+        (row2,col2)=coord2.split()
+        drow=abs(int(row1)-int(row2))
+        dcol=abs(int(col1)-int(col2))
+        if drow==0 and dcol==0: return false
+        return drow<=1 and dcol<=1
 
     @staticmethod
     def _str_coord(row, col):
@@ -32,7 +49,7 @@ class RectangleBoardType(BoardType):
         for (coord,cell,val) in engine.cells_renderings(game):
             (row, col)=coord.split()
             cells[int(row)][int(col)] = {'cell':cell, 'val':val}
-            
+
         return cells
 
     def _calc_neighbours_coords(self, r, c):
@@ -64,7 +81,7 @@ class Game(db.Model):
     is_won = db.BooleanProperty()
     start_date = db.DateTimeProperty(auto_now_add = 1)
     board = db.ReferenceProperty(BoardType)
-    
+
     @property
     def cell_map(self):
         logging.debug("enter cell_map")
