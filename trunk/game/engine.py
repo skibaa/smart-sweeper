@@ -18,8 +18,7 @@ def bind_cells(game):
     return cells
 
 def save_cells(cells):
-    for cell in cells:
-        cell.save()
+    db.put(cells)
 
 def start_game(game):
     cells = bind_cells(game)

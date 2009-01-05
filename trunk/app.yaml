@@ -11,5 +11,8 @@ handlers:
 - url: /test
   script: test.py
 
+- url: /deltest
+  script: test_delete.py
+
 - url: /.*
   script: main.py

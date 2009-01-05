@@ -17,27 +17,22 @@ def add_in_transaction(root, text, amount):
      for j in range(amount):
         c=C(parent=root, i=text)
         c.put()
+def add_many(text, amount):
+    db.put([C(i=text) for i in range(amount)])
 
-print "with transactions - big"
+print "with transactions"
 for i in range(5):
     t=time()
     root=Root()
     root.put()
-    db.run_in_transaction(add_in_transaction, root, t1000, 10)
+    db.run_in_transaction(add_in_transaction, root, t1000, 30)
     print time()-t
-print "without transactions - big"
+print "with put many"
 for i in range(5):
     t=time()
     root=Root()
     root.put()
-    add_in_transaction(None, t1000, 10)
-    print time()-t
-print "without transactions - small"
-for i in range(5):
-    t=time()
-    root=Root()
-    root.put()
-    add_in_transaction(None, "a", 10)
+    add_many(t1000, 30)
     print time()-t
 
 print "total time:", time()-total_t
