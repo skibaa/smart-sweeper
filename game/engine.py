@@ -4,7 +4,7 @@ from game.models import *
 
 logging.basicConfig(level=logging.DEBUG)
 
-def start_game(game):
+def bind_cells(game):
     cells=[]
     for cell in game.board.unboundcell_set:
         newcell = BoundCell(
@@ -13,9 +13,20 @@ def start_game(game):
             board=cell.board,
             game=game
         )
-        newcell.put()
         cells += [newcell]
     assert cells, "No unbound cells for board"
+    return cells
+
+def save_cells(cells):
+    for cell in cells:
+        cell.save()
+
+def start_game(game):
+    cells = bind_cells(game)
+    save_cells(cells)
+    put_bombs(game, cells)
+
+def put_bombs (game, cells):
     for i in range(game.board.bombs):
         cell = cells[randint(0, len(cells)-1)]
         cell.is_bomb=True
