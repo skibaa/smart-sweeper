@@ -9,35 +9,3 @@ indexes:
 # manually, move them above the marker line.  The index.yaml file is
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
-
-# Unused in query history -- copied from input.
-- kind: Cell
-  properties:
-  - name: board
-  - name: coord
-  - name: game
-
-# Unused in query history -- copied from input.
-- kind: Cell
-  properties:
-  - name: board
-  - name: game
-  - name: neighbours_coords
-  - name: coord
-
-# Unused in query history -- copied from input.
-- kind: Cell
-  properties:
-  - name: board=
-  - name: game=
-  - name: is_bomb=
-  - name: neighbours_coords=
-  - name: coord
-
-# Unused in query history -- copied from input.
-- kind: Cell
-  properties:
-  - name: board=
-  - name: game=
-  - name: neighbours_coords=
-  - name: coord

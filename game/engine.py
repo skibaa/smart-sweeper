@@ -2,92 +2,111 @@ import logging
 from random import randint
 from game.models import *
 
-logging.basicConfig(level=logging.DEBUG)
+class Cell(object):
+    neighbours=[] #indeces of neighbours
+    is_open = False
+    is_bomb = False
+    is_flag = False
+    bombs_around_cached = None
 
-def bind_cells(game):
-    cells=[]
-    for cell in game.board.unboundcell_set:
-        newcell = BoundCell(
-            coord=cell.coord,
-            neighbours_coords=cell.neighbours_coords,
-            board=cell.board,
-            game=game
-        )
-        cells += [newcell]
-    assert cells, "No unbound cells for board"
-    return cells
+class RectangleBoard(Board):
+    def  __init__(self, bombs, width, height):
+        self.bombs = bombs
+        self.width = width
+        self.height = height
 
-def save_cells(cells):
-    db.put(cells)
+    def __str__(self):
+        return "%d x %d rectangle with %d bombs"%(self.width, self.height, self.bombs)
 
-def start_game(game):
-    cells = bind_cells(game)
-    save_cells(cells)
-    put_bombs(game, cells)
+    def get_template(self):
+        return 'boards/rectangle.html'
 
-def put_bombs (game, cells):
+    def cells_for_template(self, cells):
+        res = []
+        i=0
+        for row in range(self.height):
+            res+=[[{'key':i+col,'value':render_cell(cells[i+col])}
+                for col in range(self.width)]]
+            i+=self.width
+        return res
+
+    def _calc_neighbours_indeces(self, index):
+        w=self.width
+        possibles=index-w-1,  index-w,    index-w+1, \
+            index-1,                        index+1, \
+            index+w-1,  index+w,    index+w+1
+        max_i=self.width*self.height-1
+        return [i for i in possibles if i>=0 and i<=max_i]
+
+    def create_cells(self):
+        res = [Cell() for i in range(self.width * self.height)]
+        for i,v in enumerate(res):
+            v.neighbours=[n for n in self._calc_neighbours_indeces(i)]
+        return res
+
+def start_game (board):
+    game=Game()
+    game.board=board
+    game.cells=board.create_cells()
+    empty_cells=game.cells[:] #make a shallow copy of the list
     for i in range(game.board.bombs):
-        cell = cells[randint(0, len(cells)-1)]
+        randindex=randint(0, len(empty_cells)-1)
+        cell = empty_cells.pop(randindex)
+        #the cell is same in cells and empty_cells because of shallow copy
         cell.is_bomb=True
-        cell.put()
-        cells.remove(cell) #so it does not get a bomb twice
+    return game
 
-def cell_neighbours(cell, game=None):
-    if not game:
-        game=cell.game
-    for i in cell.neighbours_coords:
-        yield game.cell_map[i]
+def bombs_around(game, index):
+    cell=game.cells[index]
+    if cell.bombs_around_cached is None:
+        assert cell.is_open
+        cell.bombs_around_cached = len(filter(
+            lambda(c):game.cells[c].is_bomb,
+            cell.neighbours))
+    return cell.bombs_around_cached
 
-def neighbours_bombs(cell, game=None):
-    assert cell.is_open
-    if not cell.neighbours_bombs_cached==None:
-        return cell.neighbours_bombs_cached
-    return len(filter(lambda(c):c.is_bomb, cell_neighbours(cell, game)))
-
-def open(cell, game=None):
+def open(game, index):
+    cell=game.cells[index]
     if cell.is_open:
         return
     cell.is_open=True
-    cell.neighbours_bombs_cached=neighbours_bombs(cell, game)
-    cell.put()
-    if not game:
-        game=cell.game
     if cell.is_bomb:
         game.is_complete=True
-        game.put()
         return
-    if cell.neighbours_bombs_cached==0: #if all neighbours are clean, open them
-        for n in cell_neighbours(cell, game):
-            open(n, game)
+    if bombs_around(game, index)==0: #if all neighbours are clean, open them
+        for n in cell.neighbours:
+            open(game, n)
 
 def check_won(game):
-    logging.info("game won")
     if game.is_won:
         return
-    closed_cells=len(filter(lambda(c):not c.is_open, game.boundcell_set))
+    closed_cells=len(filter(lambda(c):not c.is_open, game.cells))
     logging.info("closed cells:%d, bombs hidden:", closed_cells, game.board.bombs)
     if game.board.bombs == closed_cells:
         game.is_won=True
         game.is_complete=True
-        game.put()
 
 def flag(cell):
     if cell.is_flag:
         cell.is_flag=None
     else:
         cell.is_flag=True
-    cell.put()
 
-def cells_renderings(game):
-    for (coord,cell) in game.cell_map.iteritems():
-        if cell.is_open:
-            if cell.is_bomb:
-                val='B'
-            else:
-                val=neighbours_bombs(cell, game)
+def render_cell(cell):
+    if cell.is_open:
+        if cell.is_bomb:
+            return 'B'
         else:
-            if cell.is_flag:
-                val='F'
-            else:
-                val='&nbsp;'
-        yield (coord,cell,val)
+            assert cell.bombs_around_cached is not None
+            return cell.bombs_around_cached
+    else:
+        if cell.is_flag:
+            return 'F'
+        else:
+            return '&nbsp;'
+
+def sanitize_key(name):
+    return 'key'+name
+
+def unsanitize_key(key_name):
+    return key_name[3:]
