@@ -15,6 +15,7 @@ from django.shortcuts import render_to_response
 #Local imports
 from game.models import *
 from game import engine
+from game.engine import RectangleBoard
 
 class NewGameForm(forms.Form):
     board = fields.ChoiceField(required=True)
@@ -22,12 +23,9 @@ class NewGameForm(forms.Form):
     def set_board_choices(self):
         bound_field = self['board']
         choices = [('', '[Select board]')]
-        def add_names(aModel):
-            for b in aModel.all():
-                pair = (b.key(), b.name)
-                choices.append(pair)
-        add_names(BoardType)
-        add_names(RectangleBoardType)
+        for b in BoardModel.all():
+            pair = (b.key(), engine.unsanitize_key(b.key().name()))
+            choices.append(pair)
         bound_field.field.choices = choices
     
 class NewBoardForm(forms.Form):
@@ -39,7 +37,7 @@ class NewBoardForm(forms.Form):
 
     def set_board_choices(self):
         bound_field = self['board']
-        choices = [('', '[Select board type]'),('RectangleBoardType', 'Rectangle board')]
+        choices = [('', '[Select board type]'),(RectangleBoard.__name__, 'Rectangle board')]
         bound_field.field.choices = choices
 
 def login_required(func):
@@ -61,29 +59,33 @@ def admin_required(func):
     return func(request, *args, **kwds)
   return admin_wrapper
 
-def index(request):
+def _get_current_game():
     user = users.get_current_user()
-    games = Game.gql("WHERE user=:user AND isComplete=FALSE", user=user).fetch(100)
+    if not user: return None
+    game_key = db.Key.from_path('GameModel', engine.sanitize_key(user.email()))
+    return db.get(game_key)
 
-    return render_to_response ('home/index.html', {
-        'user': user,
-        'games': games,
-        'new_game_link': '/game/new',
-        'logout_url': users.create_logout_url('/'),
-        'login_url': users.create_login_url('/')
+@login_required
+def index(request):
+    game_model=_get_current_game()
+    if game_model:
+        return _response_game(game_model.contents)
+    else:
+        return _show_new_game_form()
+
+def _show_new_game_form():
+    form = NewGameForm() # An unbound form
+    form.set_board_choices()
+    return render_to_response ("home/new_game_form.html", {
+        'form': form,
     })
 
 @login_required
 def new_game(request):
-    user = users.get_current_user()
     if request.method != 'POST': # If the form has been submitted...
-        form = NewGameForm() # An unbound form
-        form.set_board_choices()
-        return render_to_response ("home/new_game_form.html", {
-            'user': user,
-            'form': form,
-        })
+        return _show_new_game_form()
 
+    user = users.get_current_user()
     form = NewGameForm(request.POST) # A form bound to the POST data
     form.set_board_choices()
     if not form.is_valid(): # All validation rules pass
@@ -92,44 +94,37 @@ def new_game(request):
             'form': form,
         })    # Process the data in form.cleaned_data
 
-    board = BoardType.get(form.clean_data['board'])
-    g = Game(
-        user=user,
-        isComplete=False,
-        board = board
+    board_model = BoardModel.get(form.clean_data['board'])
+    game=engine.start_game(board_model.contents)
+    game_model = GameModel(
+        key_name=engine.sanitize_key(user.email()),
+        contents=game
     )
-    g.put() #Save new game to db, and redirect there
-    engine.start_game(g)
-    g.put()
-    return HttpResponseRedirect(
-        reverse('game.views.game_view', args=(g.key().id(),))) # Redirect after POST
+    game_model.put() #Save new game to db, and redirect there
+    return HttpResponseRedirect(reverse('game.views.index')) # Redirect after POST
 
 @login_required
 def game_open(request, cell_id):
-    cell = BoundCell.get_by_id(long(cell_id))
-    game=cell.game
-    assert game.user == users.get_current_user()
-    engine.open(cell, game)
+    game_model=_get_current_game()
+    game=game_model.contents
+    engine.open(game, int(cell_id))
     engine.check_won(game)
+    game_model.contents=game
+    game_model.save()
     return _response_game(game)
 
 @login_required
 def game_flag(request, cell_id):
-    cell = BoundCell.get_by_id(long(cell_id))
-    game=cell.game
-    assert game.user == users.get_current_user()
+    game_model=_get_current_game()
+    game=game_model.contents
+    cell=game.cells[int(cell_id)]
     engine.flag(cell)
-    return _response_game(game)
-
-@login_required
-def game_view(request, game_id):
-    user = users.get_current_user()
-    game = Game.get_by_id(long(game_id))
-    assert game.user == user #to prevent access to others' games
+    game_model.contents=game
+    game_model.save()
     return _response_game(game)
 
 def _response_game(game):
-    cells = game.board.get_cells_for_template(game)
+    cells = game.board.cells_for_template(game.cells)
     return render_to_response (game.board.get_template(), {
         'cells': cells,
         'game': game,
@@ -138,24 +133,20 @@ def _response_game(game):
 
 @admin_required
 def admin(request):
-    boards = RectangleBoardType.all() #TODO: find out how to use polymorphism
+    boards = [
+        {'key':b.key(),'name':engine.unsanitize_key(b.key().name()),'contents':b.contents}
+            for b in BoardModel.all()]
     return render_to_response ("admin/index.html", {'boards':boards})
 
 @admin_required
 def view_board(request, board_key):
-    board = BoardType.get(board_key)
+    board = BoardModel.get(board_key)
     return render_to_response ("admin/edit_board.html", {'board':board})
 
 @admin_required
 def del_board(request, board_key):
-    board = BoardType.get(board_key)
-    for cell in board.unboundcell_set:
-        cell.delete()
-    #TODO: delete bound cells?
-    #for cell in board.boundcell_set:
-    #    cell.delete()
-    board.delete()
-    return render_to_response ("admin/edit_board.html", {'board':board})
+    db.delete(board_key)
+    return HttpResponseRedirect(reverse('game.views.admin'))
 
 @admin_required
 def new_board(request):
@@ -173,18 +164,16 @@ def new_board(request):
             'form': form,
         })    # Process the data in form.cleaned_data
 
-
-    board_class = globals()[form.clean_data['board']]
+    board_kind=form.clean_data['board']
+    board_class = globals()[board_kind]
     #TODO: use reflection to allow any class
-    assert board_class==RectangleBoardType
-    board = board_class(name=form.clean_data['name'],
+    assert board_class==RectangleBoard
+    board = board_class(
         bombs=form.clean_data['bombs'],
         width=form.clean_data['width'],
         height=form.clean_data['height'])
-    board.put()
-    board.init_cells()
-    board.put()
-    assert board.unboundcell_set.fetch(1)[0],"No cells created for board"
-    return render_to_response("admin/index.html",
-        {'boards':RectangleBoardType.all()})
+    board_model=BoardModel(key_name=engine.sanitize_key(form.clean_data['name']))
+    board_model.contents=board
+    board_model.put()
+    return HttpResponseRedirect(reverse('game.views.admin'))
 

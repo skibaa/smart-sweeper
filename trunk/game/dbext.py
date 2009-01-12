@@ -1,5 +1,32 @@
 import logging
 from google.appengine.ext import db
+from google.appengine.api import datastore_errors
+import cPickle
+
+class PickledProperty(db.Property):
+    data_type = db.Blob
+
+    def __init__(self, force_type=None, *args, **kw):
+        self.force_type=force_type
+        super(PickledProperty, self).__init__(*args, **kw)
+
+    def validate(self, value):
+        value = super(PickledProperty, self).validate(value)
+        if value is not None and self.force_type and \
+            not isinstance(value, self.force_type):
+                raise datastore_errors.BadValueError(
+                    'Property %s must be of type "%s".' % (self.name,
+                        self.force_type))
+        return value
+
+    def get_value_for_datastore(self, model_instance):
+        value = self.__get__(model_instance, model_instance.__class__)
+        if value is not None:
+            return db.Text(cPickle.dumps(value))
+
+    def make_value_from_datastore(self, value):
+        if value is not None:
+            return cPickle.loads(str(value))
 
 class CachedReferenceProperty(db.ReferenceProperty):
 
