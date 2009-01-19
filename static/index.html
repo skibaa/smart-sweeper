@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <title>Smart sweeper</title>
+    <script src="/static/javascript/prototype.js" type="text/javascript"></script>
+    <script src="/static/javascript/scriptaculous.js" type="text/javascript"></script>
+    <link href="/static/main.css" rel="stylesheet" type="text/css"/>
+    <script src="/static/javascript/replace_main.js" type="text/javascript"></script>
+  </head>
+  <body>
+      <div id="left_menu">
+          <p><a id="welcome" href="#"
+            onclick="return hl_replace_main(this, '/static/welcome.html');">Welcome</a>
+          <p><a id="new_game" href="#"
+            onclick="return hl_replace_main(this, '/game/new/')">New game</a>
+          <p><a id="board_edit" href="#"
+            onclick="return hl_replace_main(this, '/static/not_implemented.html');">Board editor</a>
+          <p><a id="scores" href="#"
+            onclick="return hl_replace_main(this, '/static/not_implemented.html');">Scores</a>
+      </div>
+      <div id="main_div"></div>
+      <script type="text/javascript">
+          new Ajax.Updater('main_div', '/static/welcome.html', { method: 'get' });
+      </script>
+  </body>
+</html>

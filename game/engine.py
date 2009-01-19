@@ -95,15 +95,15 @@ def flag(cell):
 def render_cell(cell):
     if cell.is_open:
         if cell.is_bomb:
-            return 'B'
+            return '/static/images/bomb.png'
         else:
             assert cell.bombs_around_cached is not None
-            return cell.bombs_around_cached
+            return '/static/images/'+str(cell.bombs_around_cached)+'.png'
     else:
         if cell.is_flag:
-            return 'F'
+            return '/static/images/flag.png'
         else:
-            return '&nbsp;'
+            return '/static/images/closed.png'
 
 def sanitize_key(name):
     return 'key'+name
