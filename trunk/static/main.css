@@ -1,0 +1,33 @@
+root { 
+    display: block;
+}
+h1 {
+    color:rgb(112,112,255);
+}
+div#left_menu  {
+    position:absolute;
+    top:10px;
+    left:10px;
+    width:100pt;
+    vertical-align:text-top;
+    text-align:left;
+    border-right: thick solid navy;
+    font-family:sans-serif;
+    font-weight:700;
+}
+div#left_menu a {
+    text-decoration:none;
+}
+
+div#left_menu p {
+    left:10px;
+    width:90pt;
+    text-align:right;
+}
+
+div#main_div {
+    position:absolute;
+    top:0px;
+    left:120pt;
+    vertical-align:text-top;
+}

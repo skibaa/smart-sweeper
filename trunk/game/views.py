@@ -43,26 +43,35 @@ class NewBoardForm(forms.Form):
 def login_required(func):
   """Decorator that redirects to the login page if you're not logged in."""
   def login_wrapper(request, *args, **kwds):
+    """ login disabled till anonymous user is handled well
     if users.get_current_user() is None:
       return HttpResponseRedirect(
           users.create_login_url(request.get_full_path().encode('utf-8')))
-
+    """
     return func(request, *args, **kwds)
   return login_wrapper
 
 def admin_required(func):
   """Decorator that redirects to the login page if you're not logged in."""
   def admin_wrapper(request, *args, **kwds):
+    if users.get_current_user() is None:
+      return HttpResponseRedirect(
+          users.create_login_url(request.get_full_path().encode('utf-8')))
     if not users.is_current_user_admin():
         return render_to_response("admin/noaccess.html")
 
     return func(request, *args, **kwds)
   return admin_wrapper
 
-def _get_current_game():
+def _get_game_key():
     user = users.get_current_user()
-    if not user: return None
-    game_key = db.Key.from_path('GameModel', engine.sanitize_key(user.email()))
+    if user:
+        return engine.sanitize_key(user.email())
+    else:
+        return 'anonymous'
+
+def _get_current_game():
+    game_key = db.Key.from_path('GameModel', _get_game_key())
     return db.get(game_key)
 
 @login_required
@@ -85,19 +94,17 @@ def new_game(request):
     if request.method != 'POST': # If the form has been submitted...
         return _show_new_game_form()
 
-    user = users.get_current_user()
     form = NewGameForm(request.POST) # A form bound to the POST data
     form.set_board_choices()
     if not form.is_valid(): # All validation rules pass
         return render_to_response ("home/new_game_form.html", {
-            'user': user,
             'form': form,
         })    # Process the data in form.cleaned_data
 
     board_model = BoardModel.get(form.clean_data['board'])
     game=engine.start_game(board_model.contents)
     game_model = GameModel(
-        key_name=engine.sanitize_key(user.email()),
+        key_name=_get_game_key(),
         contents=game
     )
     game_model.put() #Save new game to db, and redirect there
