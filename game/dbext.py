@@ -3,6 +3,8 @@ from google.appengine.ext import db
 from google.appengine.api import datastore_errors
 import cPickle
 
+logger=logging.getLogger("smartSweeper.dbext")
+
 class PickledProperty(db.Property):
     data_type = db.Blob
 
@@ -49,11 +51,11 @@ class _CachedReverseReferenceProperty(db._ReverseReferenceProperty):
     def __get__(self, model_instance, model_class):
         if model_instance is None:
             return self
-        logging.debug("cached reverse trying")
+        logger.debug("cached reverse trying")
         if self.__collection_name in model_instance.__dict__:# why does it get here at all?
             return model_instance.__dict__[self.__collection_name]
 
-        logging.info("cached reverse miss %s",self.__collection_name)
+        logger.info("cached reverse miss %s",self.__collection_name)
         query=super(_CachedReverseReferenceProperty, self).__get__(model_instance,
             model_class)
         #replace the attribute on the instance

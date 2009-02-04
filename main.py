@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import os
 
 # Google App Engine imports.
@@ -29,7 +30,12 @@ django.dispatch.dispatcher.connect(
 #    django.core.signals.got_request_exception)
 
 def real_main():
-  logging.basicConfig(level=logging.DEBUG)
+  #logging.config.fileConfig("1logging.conf")
+  root=logging.getLogger("root")
+  root.setLevel(logging.WARNING)
+  logger=logging.getLogger("smartSweeper")
+  logger.setLevel(logging.DEBUG)
+  #logger.propagate=0
   # Create a Django application for WSGI.
   application = django.core.handlers.wsgi.WSGIHandler()
 

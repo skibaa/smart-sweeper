@@ -2,6 +2,8 @@ import logging
 from random import randint
 from game.models import *
 
+logger=logging.getLogger("smartSweeper.engine")
+
 class Cell(object):
     neighbours=[] #indeces of neighbours
     is_open = False
@@ -45,6 +47,7 @@ class RectangleBoard(Board):
         return res
 
 def start_game (board):
+    logger.debug("start_game1")
     game=Game()
     game.board=board
     game.cells=board.create_cells()
@@ -81,7 +84,7 @@ def check_won(game):
     if game.is_won:
         return
     closed_cells=len(filter(lambda(c):not c.is_open, game.cells))
-    logging.info("closed cells:%d, bombs hidden:", closed_cells, game.board.bombs)
+    logger.info("closed cells:%d, bombs hidden:%d", closed_cells, game.board.bombs)
     if game.board.bombs == closed_cells:
         game.is_won=True
         game.is_complete=True
