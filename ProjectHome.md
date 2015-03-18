@@ -1,0 +1,1 @@
+AppEngine based clone of the famous Windows game 'Mine Sweeper'. Emphasis on eliminating the guess work usual in the original game. In Smart Sweeper you never have to guess.
